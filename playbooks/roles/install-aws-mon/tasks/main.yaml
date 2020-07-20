@@ -1,0 +1,35 @@
+---
+- name: Ensure OS Pre-Requsites are installed - OS Amazon
+  yum:
+    name: ['perl-Time-HiRes','perl-DateTime','perl-Sys-Syslog','perl-Crypt-SSLeay','perl-libwww-perl','perl-LWP-Protocol-https','perl-Digest-SHA']
+    state: installed
+  become: true
+  become_user: root
+  when: ansible_os_family == "RedHat"
+
+- name: Ensure OS Pre-Requsites are installed - Debian/Ubuntu
+  apt:
+    name: ['unzip', 'libwww-perl', 'libdatetime-perl']
+    state: present
+  become: true
+  become_user: root
+  when: ansible_os_family == "Debian"
+  
+
+- name: Download and extract aws monitoring tools
+  unarchive:
+    src: "{{cw_script_download_url}}"
+    dest: "{{ansible_user_dir}}"
+    remote_src: yes
+  when: ansible_os_family == "Debian" or ansible_os_family == "RedHat"
+
+- name: Install cron tab for user and enable monitoring script. Creates an entry like "*/5 * * * * ls -alh > /dev/null"
+  cron:
+    name: "AWS Disk and Memory Monitoring"
+    minute: "{{cw_cron_minute}}"
+    job: "~/aws-scripts-mon/mon-put-instance-data.pl  {{cw_options}}"
+    state: present
+  when: ansible_os_family == "Debian" or ansible_os_family == "RedHat"
+
+
+

@@ -1,0 +1,37 @@
+---
+- hosts: localhost
+  connection: local
+  tasks:
+  - add_host:
+      name: "{{ working_host }}"
+      groups: working_group
+    changed_when: false
+
+- name: AWS| Install and configure AWS Monitoring Scripts
+  hosts: working_group
+  gather_facts: true
+  vars_files:
+    - group_vars/install-aws-mon.yaml
+  pre_tasks:
+    - name: Ensure Ansible pre-requsites are installed for RHEL/CentOS 
+      yum:
+        name: ["libselinux-python"]
+        state: installed
+      become: true
+      become_user: root
+      tags:
+        - pre-requsites
+        - configure
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+    - name: Ensure Ansible pre-requsites are installed for Debian/Ubuntu
+      apt:
+        name: ["python-selinux"]
+        state: present
+      become: true
+      become_user: root
+      tags:
+        - pre-requsites
+        - configure
+      when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+  roles:
+    - role: install-aws-mon
